@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 
-ThreadManager::ThreadManager(size_t threadCount) : stop(false) {
+ThreadManager::ThreadManager(size_t threadCount) : isStopped(false) {
     if (threadCount == 0) {
         throw std::invalid_argument("Thread count must be greater than 0");
     }
@@ -15,10 +15,10 @@ ThreadManager::ThreadManager(size_t threadCount) : stop(false) {
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);
                     this->condition.wait(lock, [this]() {
-                        return this->stop || !this->tasks.empty();
+                        return this->isStopped || !this->tasks.empty();
                     });
 
-                    if (this->stop && this->tasks.empty()) {
+                    if (this->isStopped && this->tasks.empty()) {
                         return;
                     }
 
@@ -33,9 +33,13 @@ ThreadManager::ThreadManager(size_t threadCount) : stop(false) {
 }
 
 ThreadManager::~ThreadManager() {
+    stop();
+}
+
+void ThreadManager::stop() {
     {
         std::unique_lock<std::mutex> lock(queueMutex);
-        stop = true;
+        isStopped = true;
     }
 
     condition.notify_all();
@@ -51,7 +55,7 @@ void ThreadManager::enqueueTask(std::function<void()> task) {
     {
         std::unique_lock<std::mutex> lock(queueMutex);
 
-        if (stop) {
+        if (isStopped) {
             throw std::runtime_error("Cannot enqueue tasks on a stopped ThreadManager");
         }
 

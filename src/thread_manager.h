@@ -19,6 +19,9 @@ public:
     // Adds a new task to the thread pool's task queue
     void enqueueTask(std::function<void()> task);
 
+    // Explicitly stops the thread manager
+    void stop();
+
 private:
     // Vector to hold worker threads
     std::vector<std::thread> workers;
@@ -31,7 +34,7 @@ private:
     std::condition_variable condition;
 
     // Flag to indicate if the thread pool is stopping
-    bool stop;
+    bool isStopped;
 };
 
 #endif // THREAD_MANAGER_H

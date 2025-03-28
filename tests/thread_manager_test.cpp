@@ -4,13 +4,14 @@
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 
 void testThreadManagerBasicFunctionality(size_t threadCount) {
     std::atomic<int> counter = 0;
     ThreadManager threadManager(threadCount);
 
-    // Enqueue 10 tasks to increment the counter
-    for (int i = 0; i < 10; ++i) {
+    // Enqueue tasks equal to threadCount to increment the counter
+    for (size_t i = 0; i < threadCount; ++i) {
         threadManager.enqueueTask([&counter]() {
             counter.fetch_add(1, std::memory_order_relaxed);
         });
@@ -19,18 +20,17 @@ void testThreadManagerBasicFunctionality(size_t threadCount) {
     // Allow some time for tasks to complete
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    // Verify that all tasks were executed
-    assert(counter == 10);
+    // Verify that all tasks were executed 
+    assert(counter == threadCount);
     std::cout << "Test passed: Basic functionality with " << threadCount << " threads\n";
 }
 
 void testThreadManagerExceptionOnStopped(size_t threadCount) {
     ThreadManager threadManager(threadCount);
-
-    // Stop the thread manager by destroying it
-    threadManager.~ThreadManager();
+    threadManager.stop();  // Explicitly stop the thread manager
 
     try {
+        // Attempt to enqueue a task after stopping
         threadManager.enqueueTask([]() {
             std::cout << "This task should not run\n";
         });
